@@ -1,0 +1,19 @@
+# ninja log v5
+0	3	0	clean	73bb15134d39414c
+1	376	1747042255242956056	src/utils/CMakeFiles/utils.dir/memory.cpp.o	6bf2fd62f4258901
+1	401	1747042255271997778	src/ops/CMakeFiles/ops.dir/ffn.cpp.o	ffe53aee9ca61f31
+1	502	1747042255368803516	src/ops/CMakeFiles/ops.dir/attention.cpp.o	569cba897f5c3a02
+1	539	1747042255407525813	src/ops/CMakeFiles/ops.dir/activation.cpp.o	523b3fe9e0f137fd
+1	542	1747042255407525813	src/ops/CMakeFiles/ops.dir/layernorm.cpp.o	554179540138e297
+1	563	1747042255426886960	src/ops/CMakeFiles/ops.dir/matmul.cpp.o	d0a40cc23e286d47
+2	595	1747042255465609253	src/utils/CMakeFiles/utils.dir/logger.cpp.o	42a69928c02045dd
+0	605	1747042255475289828	src/model/CMakeFiles/model.dir/model_loader.cpp.o	88b984024f88b63b
+0	651	1747042255514012125	src/model/CMakeFiles/model.dir/model.cpp.o	88deb1bfc074670
+1	698	1747042255572095565	src/utils/CMakeFiles/utils.dir/tensor.cpp.o	bca502f584e7fd0a
+698	716	1747042255591456715	src/utils/libutils.a	797baf3b973015eb
+2	718	1747042255591456715	examples/CMakeFiles/model_loader_test.dir/model_loader_test.cpp.o	e134417012d6831e
+716	729	1747042255601137287	src/ops/libops.a	6d81a5fefdda0cab
+716	730	1747042255601137287	src/model/libmodel.a	f428e80ceccdf8b6
+730	867	1747042255736665321	bin/model_loader_test	45c6eb9efdc76aa2
+2	867	1747042255736665321	examples/CMakeFiles/model_inference_test.dir/model_inference_test.cpp.o	7316f13089983ce1
+867	2280	1747042257145211618	bin/model_inference_test	8727403e86a45ebd
