@@ -1,4 +1,4 @@
-我打算从底层用 C++/CUDA 实现较为简单但又高性能的demo/tutorial级别的大模型推理系统。
+打算从底层用 C++/CUDA 实现较为简单但又高性能的demo/tutorial级别的大模型推理系统。
 
 一、总体目标和设计思路
 1. 仅支持推理（inference only）
