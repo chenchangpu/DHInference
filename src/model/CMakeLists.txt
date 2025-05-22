@@ -7,10 +7,10 @@ set(SOURCES
 )
 
 # 头文件
-set(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/model/model.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/model/model_loader.h
-)
+# set(HEADERS
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/model/model.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/model/model_loader.h
+# )
 
 # 创建库
 add_library(${TARGET_NAME} STATIC ${SOURCES})

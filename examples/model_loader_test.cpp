@@ -9,112 +9,83 @@ using namespace dhinference;
 
 // 创建一个测试模型文件
 void createDummyModelFile(const std::string& filepath, int n_layers, int n_heads, 
-                           int hidden_dim, int ffn_expansion) {
+                         int hidden_dim, int ffn_expansion) {
+    // 复用model_loader_test.cpp中的函数
     std::ofstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "无法创建模型文件: " << filepath << std::endl;
         return;
     }
     
-    // 设置随机生成器
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    // 使用固定的种子
+    std::mt19937 gen(42);  // 使用固定的种子42
     std::uniform_real_distribution<float> dist(-0.1f, 0.1f);
     
     // 写入模型配置
     file.write(reinterpret_cast<const char*>(&n_layers), sizeof(int));
     file.write(reinterpret_cast<const char*>(&n_heads), sizeof(int));
     
-    // 写入激活函数类型 (GELU = 1)
-    int act_func = 1;
+    int act_func = 0;  // RELU
     file.write(reinterpret_cast<const char*>(&act_func), sizeof(int));
-    
-    // 写入隐藏层维度
     file.write(reinterpret_cast<const char*>(&hidden_dim), sizeof(int));
-    
-    // 写入FFN扩展系数
     file.write(reinterpret_cast<const char*>(&ffn_expansion), sizeof(int));
     
-    // 输入维度固定为128
-    int input_dim = 128;
+    int input_dim = hidden_dim;         // input_dim == hidden_dim
     
     // 为每一层写入参数
     for (int layer = 0; layer < n_layers; ++layer) {
-        std::cout << "生成第 " << (layer+1) << " 层参数..." << std::endl;
-        
-        // 当前层的输入维度，第一层是input_dim，其他层是hidden_dim
         int curr_input_dim = (layer == 0) ? input_dim : hidden_dim;
-        
-        // 写入Wq (curr_input_dim x hidden_dim)
+
+        // 写入LayerNorm参数
+        // 第一层的attention_norm使用input_dim，其他层使用hidden_dim
         for (int i = 0; i < curr_input_dim; ++i) {
-            for (int j = 0; j < hidden_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
+            float val = 1.0f + dist(gen) * 0.01f;
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
         }
-        
-        // 写入Wk (curr_input_dim x hidden_dim)
         for (int i = 0; i < curr_input_dim; ++i) {
-            for (int j = 0; j < hidden_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
-        }
-        
-        // 写入Wv (curr_input_dim x hidden_dim)
-        for (int i = 0; i < curr_input_dim; ++i) {
-            for (int j = 0; j < hidden_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
-        }
-        
-        // 写入Wo (hidden_dim x hidden_dim)
-        for (int i = 0; i < hidden_dim; ++i) {
-            for (int j = 0; j < hidden_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
-        }
-        
-        // 写入注意力LayerNorm参数
-        for (int i = 0; i < hidden_dim; ++i) {
-            float val = 1.0f + dist(gen) * 0.01f;  // gamma接近1
+            float val = dist(gen) * 0.01f;
             file.write(reinterpret_cast<const char*>(&val), sizeof(float));
         }
         
+        // 写入注意力层参数
+        for (int i = 0; i < curr_input_dim * hidden_dim; ++i) {
+            float val = dist(gen);
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
+        }
+        
+        for (int i = 0; i < curr_input_dim * hidden_dim; ++i) {
+            float val = dist(gen);
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
+        }
+        
+        for (int i = 0; i < curr_input_dim * hidden_dim; ++i) {
+            float val = dist(gen);
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
+        }
+        
+        for (int i = 0; i < hidden_dim * hidden_dim; ++i) {
+            float val = dist(gen);
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
+        }
+
+        // 写入FFN LayerNorm参数
         for (int i = 0; i < hidden_dim; ++i) {
-            float val = dist(gen) * 0.01f;  // beta接近0
+            float val = 1.0f + dist(gen) * 0.01f;
+            file.write(reinterpret_cast<const char*>(&val), sizeof(float));
+        }
+        for (int i = 0; i < hidden_dim; ++i) {
+            float val = dist(gen) * 0.01f;
             file.write(reinterpret_cast<const char*>(&val), sizeof(float));
         }
         
         // 写入FFN参数
         int expanded_dim = hidden_dim * ffn_expansion;
-        
-        // 写入W1 (hidden_dim x expanded_dim)
-        for (int i = 0; i < hidden_dim; ++i) {
-            for (int j = 0; j < expanded_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
-        }
-        
-        // 写入W2 (expanded_dim x hidden_dim)
-        for (int i = 0; i < expanded_dim; ++i) {
-            for (int j = 0; j < hidden_dim; ++j) {
-                float val = dist(gen);
-                file.write(reinterpret_cast<const char*>(&val), sizeof(float));
-            }
-        }
-        
-        // 写入FFN LayerNorm参数
-        for (int i = 0; i < hidden_dim; ++i) {
-            float val = 1.0f + dist(gen) * 0.01f;  // gamma接近1
+        for (int i = 0; i < hidden_dim * expanded_dim; ++i) {
+            float val = dist(gen);
             file.write(reinterpret_cast<const char*>(&val), sizeof(float));
         }
-        
-        for (int i = 0; i < hidden_dim; ++i) {
-            float val = dist(gen) * 0.01f;  // beta接近0
+        for (int i = 0; i < expanded_dim * hidden_dim; ++i) {
+            float val = dist(gen);
             file.write(reinterpret_cast<const char*>(&val), sizeof(float));
         }
     }
@@ -128,7 +99,7 @@ int main() {
     Logger::getInstance().setLogLevel(LogLevel::DEBUG);
     
     // 创建测试模型文件
-    std::string model_path = "dummy_model.bin";
+    std::string model_path = std::string(CMAKE_BINARY_DIR) + "/bin/dummy_model.bin";
     int n_layers = 2;
     int n_heads = 4;
     int hidden_dim = 64;
@@ -139,6 +110,7 @@ int main() {
     // 加载模型
     try {
         std::cout << "开始加载模型..." << std::endl;
+        std::cout << "模型文件路径: " << model_path << std::endl;
         auto model = Model::loadFromFile(model_path);
         
         // 获取模型配置

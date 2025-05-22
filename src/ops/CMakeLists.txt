@@ -10,13 +10,13 @@ set(SOURCES
 )
 
 # 头文件
-set(HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/layernorm.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/matmul.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/attention.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/ffn.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/activation.h
-)
+# set(HEADERS
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/layernorm.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/matmul.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/attention.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/ffn.h
+#     ${CMAKE_CURRENT_SOURCE_DIR}/../../include/ops/activation.h
+# )
 
 # 创建库
 add_library(${TARGET_NAME} STATIC ${SOURCES})

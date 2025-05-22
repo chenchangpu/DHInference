@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(DHInference VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,8 +7,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # 编译选项
 option(BUILD_OPENMP "Build with CUDA support" OFF)
-option(BUILD_CUDA "Build with CUDA support" OFF)
+option(BUILD_CUDA "Build with CUDA support" ON)
 option(BUILD_TESTS "Build tests" ON)
+
+# 增加宏定义
+if(BUILD_OPENMP)
+    message(STATUS "OpenMP Support Enabled")
+else()
+    message(STATUS "OPENMP Support Disabled")
+endif()
+
+if(BUILD_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    message(STATUS "CUDA Support Enabled")
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+else()
+    message(STATUS "CUDA Support Disabled")
+endif()
 
 # 定义头文件包含路径
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

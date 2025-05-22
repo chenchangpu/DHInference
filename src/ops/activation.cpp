@@ -11,10 +11,6 @@ Tensor activate(const Tensor& input, ActivationType type) {
             return relu(input);
         case ActivationType::GELU:
             return gelu(input);
-        case ActivationType::SWISH:
-            return swish(input);
-        case ActivationType::SILU:
-            return silu(input);
         default:
             // 默认返回原始输入
             return input;

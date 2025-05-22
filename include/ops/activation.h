@@ -9,9 +9,7 @@ namespace dhinference {
 // 激活函数类型枚举
 enum class ActivationType {
     RELU,
-    GELU,
-    SWISH,
-    SILU
+    GELU
 };
 
 // 激活函数命名空间

@@ -25,6 +25,19 @@
 日5：实现FeedForward模块（CPU版本）
 日6：连接各模块，实现完整模型前向推理
 日7：测试CPU版本推理功能，修复bug
+
+添加：backend模式 和 openmp后端
+说明&要求：
+1. backend模式的tensor结构声明在backend/utils/backend_tensor.h中
+2. backend模式的model为静态图，即加载模型的时候就把参数和中间激活值进行内存/显存分配，后续
+        循环输入每个batch进行计算（它们形状相同，但存的数据不同），不用再额外分配内存空间，
+        这样更高效，类似tensorflow
+3. 需要定义model_graph类，完成静态图的生成和后续计算
+4. model_graph类可以把多个batch的数据同时load到内存/显存中
+4. 需要支持cpu(openmp)和gpu(cuda)两种后端，所以tensor和model_graph具有多态
+5. cuda的主要算子已经在src/backend/cuda中进行了实现（但还没有.h头文件）
+
+
 第二周：CUDA实现与优化
 日8：设计CUDA基础设施，实现基本矩阵操作
 日9：实现LayerNorm和Linear/MatMul的CUDA版本
@@ -50,7 +63,7 @@
 
 Day1 
 模型格式：decoder-only，且假设输入的tokens序列已经embedding和padding成
-        长度length=1024，维度input_dim=128，输入X_1024_x_128
+        长度length=1024，维度input_dim=128(默认)，输入X_1024_x_128
 文件格式：
 内存/变量                               类型               字节Byte
 n_Layers: 层数                          int                4

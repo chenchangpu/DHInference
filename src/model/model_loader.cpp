@@ -62,8 +62,8 @@ ModelConfig ModelLoader::parseModelConfig(std::ifstream& file) {
     // 读取FFN扩展系数
     config.ffn_expansion = readFromStream<int>(file);
     
-    // 设置输入维度（根据README中的规范）
-    config.input_dim = 128;
+    // 设置输入维度（=hidden_dim）
+    config.input_dim = config.layer_hidden_dim;
     
     LOG_INFO("模型配置: 层数=" + std::to_string(config.n_layers) +
              ", 头数=" + std::to_string(config.n_heads) +
@@ -78,20 +78,21 @@ void ModelLoader::loadLayerParameters(std::ifstream& file, Model& model, int lay
                                        int input_dim, int hidden_dim, int ffn_expansion) {
     Layer* layer = model.getLayer(layer_idx);
     
-    // 加载注意力层参数
-    loadAttentionParams(file, layer, input_dim, hidden_dim);
-    
     // 加载注意力层的LayerNorm参数
     // 第一层的attention_norm使用input_dim，其他层使用hidden_dim
     int attention_norm_dim = (layer_idx == 0) ? input_dim : hidden_dim;
     loadLayerNormParams(file, layer, attention_norm_dim, false);
-    
-    // 加载FFN参数
-    int expanded_dim = hidden_dim * ffn_expansion;
-    loadFFNParams(file, layer, hidden_dim, expanded_dim);
+
+    // 加载注意力层参数
+    loadAttentionParams(file, layer, input_dim, hidden_dim);
     
     // 加载FFN层的LayerNorm参数
     loadLayerNormParams(file, layer, hidden_dim, true);
+
+    // 加载FFN参数
+    int expanded_dim = hidden_dim * ffn_expansion;
+    loadFFNParams(file, layer, hidden_dim, expanded_dim);
+
 }
 
 void ModelLoader::loadAttentionParams(std::ifstream& file, Layer* layer, 
@@ -146,23 +147,37 @@ void ModelLoader::loadFFNParams(std::ifstream& file, Layer* layer,
     layer->setFFNWeights(w1, w2);
 }
 
+// // load 1-D array
+// std::vector<float> ModelLoader::readFloatArray(std::ifstream& file, size_t size) {
+//     std::vector<float> array(size);
+//     for (size_t i = 0; i < size; ++i) {
+//         array[i] = readFromStream<float>(file);
+//     }
+//     return array;
+// }
+
+// // load 2-D matrix
+// std::vector<float> ModelLoader::readFloatMatrix(std::ifstream& file, size_t rows, size_t cols) {
+//     std::vector<float> matrix(rows * cols);
+//     for (size_t i = 0; i < rows; ++i) {
+//         for (size_t j = 0; j < cols; ++j) {
+//             matrix[i * cols + j] = readFromStream<float>(file);
+//         }
+//     }
+//     return matrix;
+// }
+
 std::vector<float> ModelLoader::readFloatArray(std::ifstream& file, size_t size) {
     std::vector<float> array(size);
-    // dahu: 效率有待提高
-    for (size_t i = 0; i < size; ++i) {
-        array[i] = readFromStream<float>(file);
-    }
+    // 一次性读取整个数组，减少IO操作
+    file.read(reinterpret_cast<char*>(array.data()), size * sizeof(float));
     return array;
 }
 
 std::vector<float> ModelLoader::readFloatMatrix(std::ifstream& file, size_t rows, size_t cols) {
     std::vector<float> matrix(rows * cols);
-    // dahu: 效率有待提高
-    for (size_t i = 0; i < rows; ++i) {
-        for (size_t j = 0; j < cols; ++j) {
-            matrix[i * cols + j] = readFromStream<float>(file);
-        }
-    }
+    // 一次性读取整个矩阵，减少IO操作
+    file.read(reinterpret_cast<char*>(matrix.data()), rows * cols * sizeof(float));
     return matrix;
 }
 

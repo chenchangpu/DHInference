@@ -26,6 +26,20 @@ target_include_directories(${LIBRARY_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
+# 设置C++标准
+set_target_properties(${LIBRARY_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# 如果启用了CUDA，添加CUDA运行时库
+if(BUILD_CUDA)
+    target_link_libraries(${LIBRARY_NAME}
+        INTERFACE
+        CUDA::cudart
+    )
+endif()
+
 # 导出库的版本信息
 set_target_properties(${LIBRARY_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
