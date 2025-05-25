@@ -81,6 +81,21 @@ void copy_gpu_to_cpu(void* h_dst, const void* d_src, size_t size) {
     cuda_device_sync();
 }
 
+// GPU -> GPU 数据拷贝
+void copy_gpu_to_gpu(void* d_dst, const void* d_src, size_t size) {
+    if (d_dst == nullptr || d_src == nullptr || size == 0) {
+        std::cerr << "Invalid parameters for copy_gpu_to_gpu" << std::endl;
+        return;
+    }
+
+    cudaError_t err = cudaMemcpy(d_dst, d_src, size, cudaMemcpyDeviceToDevice);
+    if (err != cudaSuccess) {
+        std::cerr << "CUDA memcpy D2D failed: " << cudaGetErrorString(err) << std::endl;
+        throw std::runtime_error("CUDA memcpy D2D failed");
+    }
+}
+
+
 // 同步CPU和设备
 void cuda_device_sync() {
     cudaError_t err = cudaDeviceSynchronize();

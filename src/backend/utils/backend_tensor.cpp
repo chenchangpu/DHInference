@@ -1,4 +1,5 @@
 #include "backend/utils/backend_tensor.hpp"
+#include "backend/cuda/cuda_utils.hpp"
 #include <cstring>
 #include <algorithm>
 
@@ -21,127 +22,6 @@ static size_t compute_size(const int rank, const int* shape) {
     return size;
 }
 
-Tensor::Tensor() : rank_(0), data_(nullptr) {
-    is_leaf_ = false;
-    in_pools_ = false;
-    updated_ = false;
-    scale_ = 1.0f;
-    std::fill(shape_, shape_ + 4, 0);
-    std::fill(stride_, stride_ + 4, 0);
-}
-
-Tensor::Tensor(const int rank, const int* shape)
-    : rank_(rank) {
-    is_leaf_ = false;
-    in_pools_ = false;
-    updated_ = false;
-    scale_ = 1.0f;
-    if (rank > 4) {
-        throw std::runtime_error("Tensor rank exceeds maximum supported rank (4)");
-    }
-    
-    // 复制shape
-    std::copy(shape, shape + rank, shape_);
-    
-    // 默认行主序计算stride
-    compute_stride(rank, shape_, stride_);
-    
-    // 初始data_ = null
-    data_ = nullptr;
-
-}
-
-Tensor::Tensor(const int rank, const int* shape, const float init_val)
-    : Tensor(rank, shape) {
-    updated_ = false;
-    scale_ = 1.0f;
-    size_t total_size = compute_size(rank, shape_);
-    data_ = new float[total_size];
-    std::fill(data_, data_ + total_size, static_cast<float>(init_val));
-}
-
-Tensor::Tensor(const int rank, const int* shape, float* data)
-    : Tensor(rank, shape) {
-        updated_ = false;
-        scale_ = 1.0f;
-        data_ = data;
-}
-
-Tensor::Tensor(const Tensor& other) : rank_(other.rank_) {
-    is_leaf_ = other.is_leaf_;               
-    in_pools_ = other.in_pools_;          
-    updated_ = other.updated_;   
-    scale_ = other.scale_;
-
-    std::copy(other.shape_, other.shape_ + 4, shape_);
-    std::copy(other.stride_, other.stride_ + 4, stride_);
-    
-    size_t total_size = compute_size(rank_, shape_);
-    data_ = new float[total_size];
-    std::copy(other.data_, other.data_ + total_size, data_);    // 只能复制CPU的data！
-}
-
-Tensor::Tensor(Tensor&& other) noexcept
-    : rank_(other.rank_)
-    , data_(other.data_) {
-    is_leaf_ = other.is_leaf_;
-    in_pools_ = other.in_pools_;
-    updated_ = other.updated_;
-    scale_ = other.scale_;
-    std::copy(other.shape_, other.shape_ + 4, shape_);
-    std::copy(other.stride_, other.stride_ + 4, stride_);
-    
-    // delete other
-    other.rank_ = 0;
-    other.data_ = nullptr;
-    std::fill(other.shape_, other.shape_ + 4, 0);
-    std::fill(other.stride_, other.stride_ + 4, 0);
-}
-
-Tensor& Tensor::operator=(const Tensor& other) {
-    if (this != &other) {
-        delete[] data_;
-        
-        rank_ = other.rank_;
-        updated_ = other.updated_;
-        is_leaf_ = other.is_leaf_;
-        in_pools_ = other.in_pools_;
-        scale_ = other.scale_;
-        std::copy(other.shape_, other.shape_ + 4, shape_);
-        std::copy(other.stride_, other.stride_ + 4, stride_);
-        
-        size_t total_size = compute_size(rank_, shape_);
-        data_ = new float[total_size];
-        std::copy(other.data_, other.data_ + total_size, data_);
-    }
-    return *this;
-}
-
-Tensor& Tensor::operator=(Tensor&& other) noexcept {
-    if (this != &other) {
-        delete[] data_;
-        
-        rank_ = other.rank_;
-        updated_ = other.updated_;
-        is_leaf_ = other.is_leaf_;
-        in_pools_ = other.in_pools_;
-        scale_ = other.scale_;
-        std::copy(other.shape_, other.shape_ + 4, shape_);
-        std::copy(other.stride_, other.stride_ + 4, stride_);
-        data_ = other.data_;
-        
-        other.rank_ = 0;
-        other.data_ = nullptr;
-        std::fill(other.shape_, other.shape_ + 4, 0);
-        std::fill(other.stride_, other.stride_ + 4, 0);
-    }
-    return *this;
-}
-
-void Tensor::setdata(float* data) {
-    delete[] data_;
-    data_ = data;
-}
 
 void Tensor::reshape(const int* new_shape) {
     size_t new_size = 1;
@@ -259,6 +139,234 @@ void Tensor::setscale(float scale){
     scale_ = scale;
 }
 
+void Tensor::free_data() {
+    if (data_ != nullptr && owns_data_) {  // 只有拥有所有权时才释放
+        if (backend_type_ == BackendType::CUDA) {
+            gpu_free(data_);
+        } else {
+            free(data_);
+        }
+        data_ = nullptr;
+    }
+}
+
+Tensor::Tensor(BackendType backend_type) 
+    : rank_(0), data_(nullptr), backend_type_(backend_type), owns_data_(true) {
+    is_leaf_ = false;
+    in_pools_ = false;
+    updated_ = false;
+    scale_ = 1.0f;
+    std::fill(shape_, shape_ + 4, 0);
+    std::fill(stride_, stride_ + 4, 0);
+}
+
+Tensor::Tensor(const int rank, const int* shape, BackendType backend_type)
+    : rank_(rank), backend_type_(backend_type), owns_data_(true) {
+    is_leaf_ = false;
+    in_pools_ = false;
+    updated_ = false;
+    scale_ = 1.0f;
+    if (rank > 4) {
+        throw std::runtime_error("Tensor rank exceeds maximum supported rank (4)");
+    }
+    
+    std::copy(shape, shape + rank, shape_);
+    compute_stride(rank, shape_, stride_);
+    data_ = nullptr;
+}
+
+Tensor::Tensor(const int rank, const int* shape, const float init_val, BackendType backend_type)
+    : Tensor(rank, shape, backend_type) {
+    if (backend_type == BackendType::CUDA) {
+        throw std::runtime_error("Cannot directly initialize CUDA tensor with value. Please create a CPU tensor first, then use setvalue() or set_backend_type().");
+    }
+    owns_data_ = true;
+    size_t total_size = compute_size(rank, shape_);
+    data_ = static_cast<float*>(malloc(total_size * sizeof(float)));
+    std::fill(data_, data_ + total_size, init_val);
+}
+
+Tensor::Tensor(const int rank, const int* shape, float* data, BackendType backend_type)
+    : Tensor(rank, shape, backend_type) {
+    data_ = data;
+    owns_data_ = false;  // 使用外部数据时不拥有所有权
+}
+
+Tensor::~Tensor() {
+    free_data();
+}
+
+Tensor::Tensor(const Tensor& other) 
+    : rank_(other.rank_), backend_type_(other.backend_type_), owns_data_(true) {
+    is_leaf_ = other.is_leaf_;               
+    in_pools_ = other.in_pools_;          
+    updated_ = other.updated_;   
+    scale_ = other.scale_;
+
+    std::copy(other.shape_, other.shape_ + 4, shape_);
+    std::copy(other.stride_, other.stride_ + 4, stride_);
+    
+    size_t total_size = compute_size(rank_, shape_);
+    if (backend_type_ == BackendType::CUDA) {
+        data_ = static_cast<float*>(gpu_malloc(total_size * sizeof(float)));
+        copy_gpu_to_gpu(data_, other.data_, total_size * sizeof(float));
+    } else {
+        data_ = static_cast<float*>(malloc(total_size * sizeof(float)));
+        std::memcpy(data_, other.data_, total_size * sizeof(float));
+    }
+}
+
+Tensor::Tensor(Tensor&& other) noexcept
+    : rank_(other.rank_)
+    , data_(other.data_)
+    , backend_type_(other.backend_type_)
+    , owns_data_(other.owns_data_) {
+    is_leaf_ = other.is_leaf_;
+    in_pools_ = other.in_pools_;
+    updated_ = other.updated_;
+    scale_ = other.scale_;
+    std::copy(other.shape_, other.shape_ + 4, shape_);
+    std::copy(other.stride_, other.stride_ + 4, stride_);
+    
+    other.rank_ = 0;
+    other.data_ = nullptr;
+    other.owns_data_ = false;
+    std::fill(other.shape_, other.shape_ + 4, 0);
+    std::fill(other.stride_, other.stride_ + 4, 0);
+}
+
+Tensor& Tensor::operator=(const Tensor& other) {
+    if (this != &other) {
+        free_data();
+        
+        rank_ = other.rank_;
+        backend_type_ = other.backend_type_;
+        updated_ = other.updated_;
+        is_leaf_ = other.is_leaf_;
+        in_pools_ = other.in_pools_;
+        scale_ = other.scale_;
+        owns_data_ = true;
+        std::copy(other.shape_, other.shape_ + 4, shape_);
+        std::copy(other.stride_, other.stride_ + 4, stride_);
+        
+        size_t total_size = compute_size(rank_, shape_);
+        if (backend_type_ == BackendType::CUDA) {
+            data_ = static_cast<float*>(gpu_malloc(total_size * sizeof(float)));
+            copy_gpu_to_gpu(data_, other.data_, total_size * sizeof(float));
+        } else {
+            data_ = static_cast<float*>(malloc(total_size * sizeof(float)));
+            std::memcpy(data_, other.data_, total_size * sizeof(float));
+        }
+    }
+    return *this;
+}
+
+Tensor& Tensor::operator=(Tensor&& other) noexcept {
+    if (this != &other) {
+        free_data();
+        
+        rank_ = other.rank_;
+        backend_type_ = other.backend_type_;
+        updated_ = other.updated_;
+        is_leaf_ = other.is_leaf_;
+        in_pools_ = other.in_pools_;
+        scale_ = other.scale_;
+        data_ = other.data_;
+        owns_data_ = other.owns_data_;
+        std::copy(other.shape_, other.shape_ + 4, shape_);
+        std::copy(other.stride_, other.stride_ + 4, stride_);
+        
+        other.rank_ = 0;
+        other.data_ = nullptr;
+        other.owns_data_ = false;
+        std::fill(other.shape_, other.shape_ + 4, 0);
+        std::fill(other.stride_, other.stride_ + 4, 0);
+    }
+    return *this;
+}
+
+void Tensor::setdata(float* data) {
+    free_data();
+    data_ = data;
+}
+
+BackendType Tensor::get_backend_type() const {
+    return backend_type_;
+}
+
+void Tensor::set_backend_type(BackendType new_backend_type) {
+    if (backend_type_ == new_backend_type) {
+        return;  // 如果类型相同，无需转换
+    }
+
+    size_t total_size = compute_size(rank_, shape_);
+    if (total_size == 0 || data_ == nullptr) {
+        backend_type_ = new_backend_type;
+        return;  // 如果没有数据，直接更改类型
+    }
+
+    // 分配新内存
+    float* new_data = nullptr;
+    if (new_backend_type == BackendType::CUDA) {
+        new_data = static_cast<float*>(gpu_malloc(total_size * sizeof(float)));
+        copy_cpu_to_gpu(new_data, data_, total_size * sizeof(float));
+    } else {
+        new_data = static_cast<float*>(malloc(total_size * sizeof(float)));
+        copy_gpu_to_cpu(new_data, data_, total_size * sizeof(float));
+    }
+
+    // 释放旧内存
+    if (owns_data_) {
+        if (backend_type_ == BackendType::CUDA) {
+            gpu_free(data_);
+        } else {
+            free(data_);
+        }
+    }
+
+    // 更新数据指针和类型
+    data_ = new_data;
+    backend_type_ = new_backend_type;
+    owns_data_ = true;  // 新分配的内存一定是owned的
+}
+
+void Tensor::set_owns_data(bool owns_data) {
+    owns_data_ = owns_data;
+}
+
+bool Tensor::get_owns_data() const {
+    return owns_data_;
+}
+
+void Tensor::setvalue(float* src_data, BackendType src_type) {
+    if (src_data == nullptr) {
+        throw std::runtime_error("Source data pointer is null");
+    }
+
+    size_t total_size = compute_size(rank_, shape_);
+    if (total_size == 0) {
+        throw std::runtime_error("Tensor has zero size");
+    }
+
+    // 根据源数据和目标数据的类型选择合适的拷贝方式
+    if (backend_type_ == BackendType::CUDA) {
+        if (src_type == BackendType::CUDA) {
+            // GPU -> GPU
+            copy_gpu_to_gpu(data_, src_data, total_size * sizeof(float));
+        } else {
+            // CPU -> GPU
+            copy_cpu_to_gpu(data_, src_data, total_size * sizeof(float));
+        }
+    } else {
+        if (src_type == BackendType::CUDA) {
+            // GPU -> CPU
+            copy_gpu_to_cpu(data_, src_data, total_size * sizeof(float));
+        } else {
+            // CPU -> CPU
+            std::memcpy(data_, src_data, total_size * sizeof(float));
+        }
+    }
+}
 
 }   // namespace backend
 } // namespace dhinference

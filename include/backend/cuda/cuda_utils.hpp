@@ -22,6 +22,7 @@ CUDA_API void* gpu_malloc(size_t size);     // 分配显存
 CUDA_API void gpu_free(void* ptr);          // 释放显存
 CUDA_API void copy_cpu_to_gpu(void* d_dst, const void* h_src, size_t size);
 CUDA_API void copy_gpu_to_cpu(void* h_dst, const void* d_src, size_t size);
+CUDA_API void copy_gpu_to_gpu(void* h_dst, const void* d_src, size_t size);
 CUDA_API void cuda_device_sync();
 
 // ops

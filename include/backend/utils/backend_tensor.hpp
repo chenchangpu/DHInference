@@ -28,14 +28,19 @@ enum class Ops{
     MATRIX_PERMUTATION_0213 // 4-D permutation 暂时只支持 [0, 1, 2, 3] -> [0, 2, 1, 3] <=> [B, L, H, D] -> [B, H, L, D]
 };
 
+enum class BackendType{
+    CPU,
+    CUDA
+};
+
 // backend的tensor类
 class Tensor {
 public:
     // 构造函数
-    Tensor();
-    Tensor(const int rank, const int* shape);
-    Tensor(const int rank, const int* shape, const float init_val);
-    Tensor(const int rank, const int* shape, float *data);
+    Tensor(BackendType backend_type = BackendType::CPU);
+    Tensor(const int rank, const int* shape, BackendType backend_type = BackendType::CPU);
+    Tensor(const int rank, const int* shape, const float init_val, BackendType backend_type = BackendType::CPU);
+    Tensor(const int rank, const int* shape, float *data, BackendType backend_type = BackendType::CPU);
     
     // 拷贝/移动构造函数
     Tensor(const Tensor& other);
@@ -46,7 +51,7 @@ public:
     Tensor& operator=(Tensor&& other) noexcept;
     
     // 析构函数
-    ~Tensor() = default;
+    ~Tensor();
     
     // 设置data
     void setdata(float* data);
@@ -109,6 +114,21 @@ public:
     // 设置scale
     void setscale(float scale);
 
+    // 获取后端类型
+    BackendType get_backend_type() const;
+    
+    // 设置后端类型
+    void set_backend_type(BackendType backend_type);
+
+    // 设置数据所有权
+    void set_owns_data(bool owns_data);
+    
+    // 获取数据所有权
+    bool get_owns_data() const;
+
+    // 根据指针和指针类型设置tensor的值
+    void setvalue(float* src_data, BackendType src_type);
+
 private:
     int rank_;      // 最高支持4维的tensor
     int shape_[4];
@@ -121,10 +141,12 @@ private:
     bool in_pools_;    // 是否放入了graph的leaf_pools或node_pools
     bool updated_;     // 是否已经遍历计算过
     float scale_;      // 算子融合后的scale
-};
+    BackendType backend_type_;  // 后端类型
+    bool owns_data_;   // 是否拥有数据所有权
 
-// 标量左乘张量
-Tensor operator*(float scalar, const Tensor& tensor);
+    // 辅助函数：释放内存
+    void free_data();
+};
 
 }   // namespace backend
 } // namespace dhinference
