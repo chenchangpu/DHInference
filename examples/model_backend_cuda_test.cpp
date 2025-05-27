@@ -171,7 +171,7 @@ int main() {
         int shape[2] = {seq_len, hidden_dim};
         dhinference::backend::Tensor* input_tensor = new dhinference::backend::Tensor(2, shape, input_vec.data());
         // move到GPU上
-        dhinference::backend::graph_model_cuda::move_data_to_gpu(input_tensor, false);  // 不是malloc出来的数据，不能free!
+        dhinference::backend::graph_model_cuda::move_data_to_gpu(input_tensor, false);  // false，不free
 
         model->alloc_extra_buff(32);   // 手动分配transpose空间
         model_loader.load_build_model_from_file(model, input_tensor);   // 已经设置了model的result
@@ -242,16 +242,18 @@ int main() {
         std::cout << "开始释放资源..." << std::endl;
         
         // 1. 释放CPU内存
-        printf("释放CPU内存\n");
-        free(result_h_ptr);
-        delete result_tensor;
+        // printf("释放CPU内存\n");
+        // free(result_h_ptr);         // 手动释放
+        // delete result_tensor;
         
-        // 2. 释放模型(GPU)资源
-        if (model) {
-            printf("释放模型资源\n");
-            model->free_tensor_pools();
-            delete model;
-        }
+        // // 2. 释放模型(GPU)资源
+        // if (model) {
+        //     printf("释放模型资源\n");
+        //     model->free_tensor_pools();  // 手动释放所有tensor
+        //     delete model;
+        // }
+
+        // 通过析构函数释放
         
         std::cout << "资源释放完成" << std::endl;
     }

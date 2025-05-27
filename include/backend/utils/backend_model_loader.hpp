@@ -31,10 +31,10 @@ public:
     void load_build_model_from_file(graph_model* model, Tensor* input_tensor);
     
 private:
-    ModelConfig model_config_;   // model config 成员
-    std::ifstream model_file_; // model file 成员
-    std::string model_file_path_;     // model文件路径
-    ModelBackend  model_backend_;       // backend
+    ModelConfig model_config_;          // model config 成员
+    std::ifstream model_file_;          // model file 成员
+    std::string model_file_path_;       // model文件路径
+    ModelBackend  model_backend_;       // backend类型
 
     // 解析模型配置
     ModelConfig parseModelConfig(std::ifstream& file);

@@ -8,6 +8,8 @@ namespace backend {
 
 // ====================== graph_model ======================
 graph_model::graph_model(){     // 分配tensor指针，并没有分配实际tensor，更没有分配实际data
+    leaf_pools = new Tensor*[1024]; // 默认分配1024个tensor指针
+    node_pools = new Tensor*[1024]; // 默认分配1024个tensor指针
     n_leafs = 0;                    // n_leafs和n_nodes初始化为0
     n_nodes = 0;
     input = nullptr;
@@ -21,6 +23,11 @@ graph_model::graph_model(int MAX_LEAFS, int MAX_NODES){     // 分配tensor指�
     n_nodes = 0;
     input = nullptr;
     result = nullptr;               // result初始化为空
+}
+
+graph_model::~graph_model(){
+    free_tensor_pools();
+    // input和result也包含在leaf_pools和node_pools中，所以不需要单独释放
 }
 
 void graph_model::set_input_tensor(Tensor* t){
@@ -131,7 +138,7 @@ void graph_model::add_op_matrix_matrix_mul(Tensor* a, Tensor* b, Tensor* c){
     add_tensor(c);
 }
 
-// c = a vec(b)
+// c = a b
 void graph_model::add_op_matrix_vector_mul(Tensor* a, Tensor* b, Tensor* c){
     c->setop(Ops::MATRIX_VECTOR_MUL);
     c->setsrc(0, a);
@@ -192,7 +199,6 @@ void graph_model::add_op_matrix_permutation_0213(Tensor* a, Tensor* b){
 // cpu释放pools内存
 void graph_model::free_tensor_pools(){
     for(int i = 0; i < n_leafs; ++i){   //释放leafs
-        free(leaf_pools[i]->data());    //  先释放tensor data
         delete leaf_pools[i];           // 然后释放tensor
         leaf_pools[i] = nullptr;
     }
@@ -210,12 +216,6 @@ void graph_model::reset_nodes(){
     }
 }
 
-// cpu释放单个tensor
-void graph_model::free_tensor(Tensor* t){
-    free(t->data());    // data通过malloc分配
-    delete t;           // Tensor本身通过new分配
-    t = nullptr;
-}
 
 // ====================== graph_model_cuda ======================
 graph_model_cuda::graph_model_cuda(): graph_model(){
@@ -227,29 +227,6 @@ graph_model_cuda::graph_model_cuda(int MAX_LEAFS, int MAX_NODES): graph_model(MA
 }
 
 void graph_model_cuda::alloc_extra_buff(size_t extr_buff_size){
-    // size_t extr_buff_size = 0;
-    // for(int i = 0; i < n_nodes; ++i){
-    //     switch (node_pools[i]->getop())
-    //     {
-    //     case Ops::MATRIX_TRANSPOSE:
-    //         extr_buff_size = std::max(extr_buff_size, 8 * sizeof(int));  // shape[4], perm[4]
-    //         break;
-    //     case Ops::MATRIX_PERMUTATION_102:
-    //         extr_buff_size = std::max(extr_buff_size, 8 * sizeof(int));
-    //         break;
-    //     case Ops::MATRIX_PERMUTATION_210:
-    //         extr_buff_size = std::max(extr_buff_size, 8 * sizeof(int));
-    //         break;
-    //     case Ops::MATRIX_PERMUTATION_021:
-    //         extr_buff_size = std::max(extr_buff_size, 8 * sizeof(int));
-    //         break;
-    //     case Ops::MATRIX_PERMUTATION_0213:
-    //         extr_buff_size = std::max(extr_buff_size, 8 * sizeof(int));  
-    //         break;
-    //     default:
-    //         break;
-    //     }
-    // }
     if(extr_buff_size > 0){
         extra_buff = (void*)gpu_malloc(extr_buff_size);
     }
@@ -638,16 +615,15 @@ void graph_model_cuda::move_data_to_cpu(Tensor* t, bool moved){
     size_t size = t->size() * sizeof(float);
     float* h_ptr = (float*)malloc(size);    // 分配显存data空间
     float* d_ptr = t->data();                   
-    copy_gpu_to_cpu(h_ptr, d_ptr, size);        // CPU复制到GPU
-    t->setdata(h_ptr);                          // 更改tensor的data指向GPU显存
-    if(moved)                                   // 是否释放CPU空间
-        free(d_ptr);                                // 释放CPU空间
+    copy_gpu_to_cpu(h_ptr, d_ptr, size);        // GPU复制到CPU
+    t->setdata(h_ptr);                          // 更改tensor的data指向CPU显存
+    if(moved)                                   // 是否释放GPU空间
+        gpu_free(d_ptr);                                // 释放GPU空间
 }
 
 // gpu释放内存
 void graph_model_cuda::free_tensor_pools(){
     for(int i = 0; i < n_leafs; ++i){   //释放leafs
-        // gpu_free(leaf_pools[i]->data());    //  先释放tensor data，注意用gpu_free
         delete leaf_pools[i];           // 然后释放tensor
         leaf_pools[i] = nullptr;
     }
@@ -660,12 +636,6 @@ void graph_model_cuda::free_tensor_pools(){
     delete[] node_pools;
 }
 
-// cpu释放单个tensor
-void graph_model_cuda::free_tensor(Tensor* t){
-    gpu_free(t->data());    // data通过gpu_malloc分配
-    delete t;               // Tensor本身通过new分配
-    t = nullptr;
-}
 
 }   // end of backend
 }   // end of dfinference
