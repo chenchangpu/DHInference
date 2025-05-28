@@ -27,7 +27,7 @@ public:
     graph_model();
     graph_model(int MAX_LEAFS, int MAX_NODES);  // 分配leaf_pools和node_pools
 
-    ~graph_model();
+    virtual ~graph_model();
 
     // 设置/获得 input tensor
     void set_input_tensor(Tensor* t);
@@ -77,6 +77,9 @@ public:
     // 遍历model_graph，进行inference前向计算
     virtual void forward() = 0;
 
+    // 将模型参数移动到对应设备
+    virtual void to_device() = 0;
+
 protected:
     void add_tensor(Tensor* t);                          // 加入leaf_pools或node_pools
     int n_leafs;                    // 参数叶子节点
@@ -93,10 +96,11 @@ public:
     graph_model_cuda(int MAX_LEAFS, int MAX_NODES);  // 分配leaf_pools和node_pools
     void forward() override;
     void free_tensor_pools();
+    void to_device() override;  // 实现CUDA设备的数据迁移
     // static void free_tensor(Tensor* t);
     void alloc_extra_buff(size_t extr_buff_size);       // 分配额外显存空间，比如transpose的shape
-    static void move_data_to_gpu(Tensor* t, bool moved = true);        // 把tensor的data移到GPU（并释放cpu的内存）
-    static void move_data_to_cpu(Tensor* t, bool moved = true);         // 把tensor的data移到CPU
+    static void move_data_to_gpu(Tensor* t);        // 把tensor的data移到GPU（并释放cpu的内存）
+    static void move_data_to_cpu(Tensor* t);         // 把tensor的data移到CPU
 
 private:
     void* extra_buff;              // 额外显存指针

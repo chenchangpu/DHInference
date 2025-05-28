@@ -286,7 +286,7 @@ Tensor& Tensor::operator=(Tensor&& other) noexcept {
 }
 
 void Tensor::setdata(float* data) {
-    free_data();
+    free_data();    // 拥有权才能释放
     data_ = data;
 }
 
@@ -295,39 +295,7 @@ BackendType Tensor::get_backend_type() const {
 }
 
 void Tensor::set_backend_type(BackendType new_backend_type) {
-    if (backend_type_ == new_backend_type) {
-        return;  // 如果类型相同，无需转换
-    }
-
-    size_t total_size = compute_size(rank_, shape_);
-    if (total_size == 0 || data_ == nullptr) {
-        backend_type_ = new_backend_type;
-        return;  // 如果没有数据，直接更改类型
-    }
-
-    // 分配新内存
-    float* new_data = nullptr;
-    if (new_backend_type == BackendType::CUDA) {
-        new_data = static_cast<float*>(gpu_malloc(total_size * sizeof(float)));
-        copy_cpu_to_gpu(new_data, data_, total_size * sizeof(float));
-    } else {
-        new_data = static_cast<float*>(malloc(total_size * sizeof(float)));
-        copy_gpu_to_cpu(new_data, data_, total_size * sizeof(float));
-    }
-
-    // 释放旧内存
-    if (owns_data_) {
-        if (backend_type_ == BackendType::CUDA) {
-            gpu_free(data_);
-        } else {
-            free(data_);
-        }
-    }
-
-    // 更新数据指针和类型
-    data_ = new_data;
     backend_type_ = new_backend_type;
-    owns_data_ = true;  // 新分配的内存一定是owned的
 }
 
 void Tensor::set_owns_data(bool owns_data) {
