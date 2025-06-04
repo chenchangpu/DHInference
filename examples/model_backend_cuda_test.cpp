@@ -177,13 +177,21 @@ int main() {
         model_loader.load_build_model_from_file(model, input_tensor);
         model->to_device();         // CPU->GPU
         
+        // 预热
+        for(int i = 0; i < 10; ++i){
+            model->forward();
+            model->reset_nodes();
+        }
+
         // 执行推理
         std::cout << "开始执行推理..." << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
         model->forward();
         auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout << "推理时间: " << duration.count() << " ms" << std::endl;
+        // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        // std::cout << "推理时间: " << duration.count() << " ms" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        std::cout << "推理时间: " << duration.count() << " us" << std::endl;
         
         // 获取结果并复制回CPU
         dhinference::backend::Tensor* result_gpu = model->get_result_tensor();

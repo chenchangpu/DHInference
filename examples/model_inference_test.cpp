@@ -153,6 +153,7 @@ int main() {
     
     // 创建测试模型文件
     // std::string model_path = "dummy_model.bin";
+    // input dim 和 hidden dim 都为128
     std::string model_path = std::string(CMAKE_BINARY_DIR) + "/bin/dummy_model.bin";
     int n_layers = 2;
     int n_heads = 4;

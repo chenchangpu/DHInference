@@ -67,4 +67,12 @@ install(TARGETS
 if(BUILD_CUDA)
     install(TARGETS model_backend_cuda_test
             RUNTIME DESTINATION bin)
-endif() 
+endif()
+
+# 安装Python测试文件
+install(FILES
+    model_pytorch_test.py
+    model_triton_test.py
+    DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+) 
