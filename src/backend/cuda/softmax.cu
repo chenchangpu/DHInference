@@ -140,7 +140,7 @@ void dispatch_softmax(float* d_x, float* d_y, int rows, int cols) {
 }
 
 // 根据cols选择合适模板参数
-// 要求cols % 2 == 0 且 2*32 <= cols <= 1024
+// 要求cols % 2 == 0 且 32 <= cols <= 1024
 extern "C" void launch_softmax(float* d_x, float* d_y, int rows, int cols) {
     if(cols <= 0){
         printf("sofmax错误：cols小于0，错误！\n");
@@ -150,6 +150,7 @@ extern "C" void launch_softmax(float* d_x, float* d_y, int rows, int cols) {
 else if (cols <= (cols_per_thread)*kWarpSize) {                                                 \
     dispatch_softmax<cols_per_thread>(d_x, d_y, rows, cols);                                    \
 }
+  DEFINE_ONE_ELIF(1)
   DEFINE_ONE_ELIF(2)
   DEFINE_ONE_ELIF(3)
   DEFINE_ONE_ELIF(4)
@@ -183,7 +184,8 @@ else if (cols <= (cols_per_thread)*kWarpSize) {                                 
   DEFINE_ONE_ELIF(32)
 #undef DEFINE_ONE_ELIF     
     else{
-        printf("softmax错误：要求cols % 2 == 0 且 2*32 <= cols <= 1024！\n");
+        printf("softmax错误：要求cols % 2 == 0 且 32 <= cols <= 1024\n");
+        printf("cols=%d\n", cols);
         exit(1);
     }                                                     
 }

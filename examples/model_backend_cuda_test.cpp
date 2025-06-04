@@ -145,14 +145,14 @@ int main() {
     dhinference::backend::Logger::getInstance().setLogLevel(dhinference::backend::LogLevel::DEBUG);
     
     // 创建测试模型文件
-    std::string model_path = std::string(CMAKE_BINARY_DIR) + "/bin/dummy_model.bin";
+    std::string model_path = "dummy_model.bin";
     int n_layers = 2;
     int n_heads = 4;
-    int hidden_dim = 128;
+    int hidden_dim = 1024;
     int ffn_expansion = 4;
     
     const int seq_len = 1024;
-    const int input_dim = 128;
+    const int input_dim = 1024;
     
     createDummyModelFile(model_path, n_layers, n_heads, hidden_dim, ffn_expansion);
     

@@ -156,12 +156,12 @@ def main():
     # 模型配置
     n_layers = 2
     n_heads = 4
-    hidden_dim = 128
+    hidden_dim = 1024
     ffn_expansion = 4
     seq_len = 1024
     
     # 创建模型文件
-    model_path = "dummy_model_pytorch.bin"
+    model_path = "../build/dummy_model_pytorch.bin"
     create_dummy_weights(model_path, n_layers, n_heads, hidden_dim, ffn_expansion)
     
     # 创建模型并加载权重
