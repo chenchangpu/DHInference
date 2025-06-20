@@ -9,12 +9,23 @@
 #include <cmath>
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 
 // using namespace dhinference::backend;
 
 // 创建一个测试模型文件
 void createDummyModelFile(const std::string& filepath, int n_layers, int n_heads, 
                          int hidden_dim, int ffn_expansion) {
+    // 若权重文件已存在，直接返回
+    try {
+        if (std::filesystem::exists(filepath) && std::filesystem::is_regular_file(filepath)) {
+            std::cout << "dummy_model权重文件已存在" << std::endl;
+            return;
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "文件系统错误: " << e.what() << std::endl;
+    }
+
     // 复用model_loader_test.cpp中的函数
     std::ofstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
@@ -148,11 +159,11 @@ int main() {
     std::string model_path = "dummy_model.bin";
     int n_layers = 2;
     int n_heads = 4;
-    int hidden_dim = 1024;
+    int hidden_dim = 4096;
     int ffn_expansion = 4;
     
-    const int seq_len = 1024;
-    const int input_dim = 1024;
+    const int seq_len = 8192;
+    const int input_dim = 4096;
     
     createDummyModelFile(model_path, n_layers, n_heads, hidden_dim, ffn_expansion);
     
@@ -188,10 +199,10 @@ int main() {
         auto start = std::chrono::high_resolution_clock::now();
         model->forward();
         auto end = std::chrono::high_resolution_clock::now();
-        // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        // std::cout << "推理时间: " << duration.count() << " ms" << std::endl;
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        std::cout << "推理时间: " << duration.count() << " us" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout << "推理时间: " << duration.count() << " ms" << std::endl;
+        // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        // std::cout << "推理时间: " << duration.count() << " us" << std::endl;
         
         // 获取结果并复制回CPU
         dhinference::backend::Tensor* result_gpu = model->get_result_tensor();

@@ -10,7 +10,7 @@ option(BUILD_OPENMP "Build with CUDA support" OFF)
 option(BUILD_CUDA "Build with CUDA support" ON)
 option(BUILD_TESTS "Build tests" ON)
 
-option(USE_CUBLAS "Use cublas to implement GEMM" OFF)
+option(USE_CUBLAS "Use cublas to implement GEMM" ON)
 option(USE_ONEFLOW "Use oneflow CUDA ops" ON)
 
 # 增加宏定义

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import time
 import numpy as np
+import os
 
 class SelfAttention(nn.Module):
     def __init__(self, hidden_dim, n_heads):
@@ -84,6 +85,10 @@ class Model(nn.Module):
         return x
 
 def create_dummy_weights(model_path, n_layers, n_heads, hidden_dim, ffn_expansion):
+    if os.path.exists(model_path):
+        print("dummpy_model权重文件已存在\n")
+        return
+
     """创建与C++版本相同的随机权重"""
     np.random.seed(42)
     weights = []
@@ -156,12 +161,12 @@ def main():
     # 模型配置
     n_layers = 2
     n_heads = 4
-    hidden_dim = 1024
+    hidden_dim = 4096
     ffn_expansion = 4
-    seq_len = 1024
+    seq_len = 8192
     
     # 创建模型文件
-    model_path = "../build/dummy_model_pytorch.bin"
+    model_path = "../build/dummy_model.bin"
     create_dummy_weights(model_path, n_layers, n_heads, hidden_dim, ffn_expansion)
     
     # 创建模型并加载权重
@@ -195,7 +200,7 @@ def main():
     
     torch.cuda.synchronize()
     end_time = time.time()
-    duration = (end_time - start_time) * 1e6  # 转换为um
+    duration = (end_time - start_time) * 1e3  # 转换为um
     
     # 获取结果
     output = output.squeeze(0)  # 移除batch维度
@@ -204,7 +209,7 @@ def main():
     output = output.numpy()
     
     # 打印统计信息
-    print(f"\n推理时间: {duration:.2f} us")
+    print(f"\n推理时间: {duration:.2f} ms")
     print(f"输入维度: [{seq_len} x {hidden_dim}]")
     print(f"输出维度: [{seq_len} x {hidden_dim}]")
     
