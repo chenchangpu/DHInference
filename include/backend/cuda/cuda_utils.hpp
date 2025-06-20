@@ -33,6 +33,9 @@ CUDA_API void launch_elementwise_mul(float* a, float* b, float* c, int n);
 CUDA_API void launch_elementwise_div(float* a, float* b, float* c, int n);
 CUDA_API void launch_elementwise_relu(float* a, float* b, int n);
 
+CUDA_API void launch_elementwise_add_oneflow(float* a, float* b, float* c, int n);
+CUDA_API void launch_elementwise_relu_oneflow(float* a, float* b, int n);
+
 // layernorm.cu
 CUDA_API void launch_layernorm(float* d_x, float* d_y, float* g, float* b, int N, int K);
 CUDA_API void launch_layernorm_oneflow(float* d_x, float* d_y, float* g, float* b, int N, int K);

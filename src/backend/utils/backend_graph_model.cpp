@@ -277,8 +277,13 @@ void graph_model_cuda::forward(){
                             if(!can_implement){
                                 throw std::runtime_error("Rank or Shape is not compatible, cannot implement elementwise add");
                             }
+                            #if USE_ONEFLOW
+                            launch_elementwise_add_oneflow(src0->data(), src1->data(), \
+                                                    now_tensor->data(), src0->size()); 
+                            #else        
                             launch_elementwise_add(src0->data(), src1->data(), \
-                                                    now_tensor->data(), src0->size());                 
+                                                    now_tensor->data(), src0->size());       
+                            #endif          
                             break;
                         }
 
@@ -382,7 +387,11 @@ void graph_model_cuda::forward(){
                             if(!can_implement){
                                 throw std::runtime_error("Rank or Shape is not compatible, cannot implement elementwise relu");
                             }
+                            #if USE_ONEFLOW
+                            launch_elementwise_relu_oneflow(src0->data(), now_tensor->data(), src0->size());
+                            #else
                             launch_elementwise_relu(src0->data(), now_tensor->data(), src0->size());
+                            #endif
                             break;
                         }
                         

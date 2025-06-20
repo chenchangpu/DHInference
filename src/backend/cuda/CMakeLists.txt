@@ -8,6 +8,7 @@ find_package(CUDAToolkit REQUIRED)
 # 创建CUDA库
 add_library(backend_cuda SHARED
     elementwise.cu
+    elementwise_oneflow.cu
     sgemm.cu
     sgemm_cublas.cu
     cuda_memory.cu
