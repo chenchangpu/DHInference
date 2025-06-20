@@ -3,6 +3,7 @@ add_subdirectory(utils)
 if(BUILD_CUDA)
     add_subdirectory(cuda)
 endif()
+
 if(BUILD_OPENMP)
     add_subdirectory(openmp)
 endif()

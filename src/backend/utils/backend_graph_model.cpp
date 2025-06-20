@@ -418,8 +418,13 @@ void graph_model_cuda::forward(){
                                 throw std::runtime_error("Rank or Shape is not compatible, cannot implement matrix layernorm");
                             }
                             int n_rows = src0->size() / src0->shape(n_rank - 1);
+                            #if USE_ONEFLOW
+                            launch_layernorm_oneflow(src0->data(), now_tensor->data(), \
+                                                    src1->data(), src2->data(), n_rows, src0->shape(n_rank - 1));
+                            #else
                             launch_layernorm(src0->data(), now_tensor->data(), \
                                                     src1->data(), src2->data(), n_rows, src0->shape(n_rank - 1));
+                            #endif
                             break;
                         }
                         
@@ -492,8 +497,13 @@ void graph_model_cuda::forward(){
                             }
                             int M = src0->size() / src0->shape(src0->getrank() - 1);
                             int N = src1->size() / src1->shape(0);
+                            #if USE_CUBLAS
+                            launch_sgemm_cublas_default(src0->data(), src1->data(), now_tensor->data(), \
+                                        M, N, src1->shape(0), now_tensor->getscale());
+                            #else
                             launch_sgemm_default(src0->data(), src1->data(), now_tensor->data(), \
                                         M, N, src1->shape(0), now_tensor->getscale());
+                            #endif
                             break;
                         }   
 
@@ -550,8 +560,13 @@ void graph_model_cuda::forward(){
                                 throw std::runtime_error("Rank or Shape is not compatible, cannot implement matrix softmax");
                             }
                             int n_rows = src0->size() / src0->shape(n_rank - 1);
+                            #if USE_ONEFLOW
+                            launch_softmax_oneflow(src0->data(), now_tensor->data(), \
+                                                    n_rows, src0->shape(n_rank - 1));  
+                            #else
                             launch_softmax(src0->data(), now_tensor->data(), \
                                                     n_rows, src0->shape(n_rank - 1));
+                            #endif
                             break;
                         }
                         

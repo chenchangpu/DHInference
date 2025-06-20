@@ -9,12 +9,15 @@ find_package(CUDAToolkit REQUIRED)
 add_library(backend_cuda SHARED
     elementwise.cu
     sgemm.cu
+    sgemm_cublas.cu
     cuda_memory.cu
     sgemv.cu
     transpose.cu
     softmax.cu
+    softmax_oneflow.cu
     rmsnorm.cu
     layernorm.cu
+    layernorm_oneflow.cu
 )
 
 # 设置CUDA编译选项

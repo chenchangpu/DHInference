@@ -35,12 +35,22 @@ CUDA_API void launch_elementwise_relu(float* a, float* b, int n);
 
 // layernorm.cu
 CUDA_API void launch_layernorm(float* d_x, float* d_y, float* g, float* b, int N, int K);
+CUDA_API void launch_layernorm_oneflow(float* d_x, float* d_y, float* g, float* b, int N, int K);
 
 // rmsnorm.cu
 CUDA_API void launch_rmsnorm(float* d_x, float* d_y, float* g, int N, int K);
 
 // sgemm.cu
 CUDA_API void launch_sgemm_default(    
+    float * __restrict__ A, 
+    float * __restrict__ B, 
+    float * __restrict__ C, 
+    const size_t M, 
+    const size_t N, 
+    const size_t K,
+    float alpha);
+
+CUDA_API void launch_sgemm_cublas_default(    
     float * __restrict__ A, 
     float * __restrict__ B, 
     float * __restrict__ C, 
@@ -56,6 +66,7 @@ CUDA_API void launch_sgemv_256(float* A, float* x, float* y, int M, int K);
 
 // softmax.cu
 CUDA_API void launch_softmax(float* d_x, float* d_y, int rows, int cols);
+CUDA_API void launch_softmax_oneflow(float* d_x, float* d_y, int rows, int cols);
 
 // transpose.cu
 CUDA_API void launch_transpose(const float* input, float* output, const int shape[4], const int perm[4], void* extra_buff, int rank);
