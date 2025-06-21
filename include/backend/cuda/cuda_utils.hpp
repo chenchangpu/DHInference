@@ -62,6 +62,17 @@ CUDA_API void launch_sgemm_cublas_default(
     const size_t K,
     float alpha);
 
+// batch sgemm
+extern "C" void launch_batched_sgemm_cublas_default(
+    float * __restrict__ A,     // [Batch, M, K]
+    float * __restrict__ B,     // [Batch, K, N]
+    float * __restrict__ C,     // [Batch, M, N]
+    const size_t Batch,
+    const size_t M, 
+    const size_t N, 
+    const size_t K,
+    float alpha);
+
 // sgemv.cu
 CUDA_API void launch_sgemv_96(float* A, float* x, float* y, int M, int K);
 CUDA_API void launch_sgemv_128(float* A, float* x, float* y, int M, int K);

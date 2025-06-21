@@ -19,13 +19,16 @@ enum class Ops{
     MATRIX_LAYERNORM,       // 2-D layernorm，其他维度的可以转换为2-D的形式
     MATRIX_RMSNORM,         // 2-D rmsnorm，其他维度的可以转换为2-D的形式
     MATRIX_MATRIX_MUL,      // 2-D matrix-martix multiply(sgemm)，其他维度的可以转化为2-D的形式
+    BATCH_MATRIX_MATRIX_MUL,// batched gemm, a_BxMxK, b_BxKxN, c_BxMxN
     MATRIX_VECTOR_MUL,      // matrix-vector multiply(sgemv)
     MATRIX_SOFTMAX,         // 2-D softmax，其他维度的可以转换为2-D的形式
     MATRIX_TRANSPOSE,       // 2-D 矩阵转置 / permutation
     MATRIX_PERMUTATION_102, // 3-D permutation [0, 1, 2] -> [1, 0, 2]
     MATRIX_PERMUTATION_210, // 3-D permutation [0, 1, 2] -> [2, 1, 0]
     MATRIX_PERMUTATION_021, // 3-D permutation [0, 1, 2] -> [0, 2, 1]
-    MATRIX_PERMUTATION_0213 // 4-D permutation 暂时只支持 [0, 1, 2, 3] -> [0, 2, 1, 3] <=> [B, L, H, D] -> [B, H, L, D]
+    MATRIX_PERMUTATION_120, // 3-D permutation [0, 1, 2] -> [1, 2, 0]
+    MATRIX_PERMUTATION_0213,// 4-D permutation 暂时只支持 [0, 1, 2, 3] -> [0, 2, 1, 3] <=> [B, L, H, D] -> [B, H, L, D]
+    MATRIX_RESHAPE          // 在不改变data数据排布的情况下，将矩阵的形状reinterpret成另一个形状
 };
 
 enum class BackendType{

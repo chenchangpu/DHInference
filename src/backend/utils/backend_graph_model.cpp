@@ -138,6 +138,16 @@ void graph_model::add_op_matrix_matrix_mul(Tensor* a, Tensor* b, Tensor* c){
     add_tensor(c);
 }
 
+// batch gemm: c[i] = a[i]b[i]
+void graph_model::add_op_batch_matrix_matrix_mul(Tensor* a, Tensor* b, Tensor* c){
+    c->setop(Ops::BATCH_MATRIX_MATRIX_MUL);
+    c->setsrc(0, a);
+    c->setsrc(1, b); 
+    add_tensor(a);
+    add_tensor(b);
+    add_tensor(c);
+}
+
 // c = a b
 void graph_model::add_op_matrix_vector_mul(Tensor* a, Tensor* b, Tensor* c){
     c->setop(Ops::MATRIX_VECTOR_MUL);
@@ -188,9 +198,23 @@ void graph_model::add_op_matrix_permutation_021(Tensor* a, Tensor* b){
     add_tensor(b);
 }
 
+void graph_model::add_op_matrix_permutation_120(Tensor* a, Tensor* b){
+    b->setop(Ops::MATRIX_PERMUTATION_120);
+    b->setsrc(0, a);
+    add_tensor(a);
+    add_tensor(b);
+}
+
 // permutation [0, 1, 2, 3] -> [0, 2, 1, 3]
 void graph_model::add_op_matrix_permutation_0213(Tensor* a, Tensor* b){
     b->setop(Ops::MATRIX_PERMUTATION_0213);
+    b->setsrc(0, a);
+    add_tensor(a);
+    add_tensor(b);
+}
+
+void graph_model::add_op_matrix_reshape(Tensor* a, Tensor* b){
+    b->setop(Ops::MATRIX_RESHAPE);
     b->setsrc(0, a);
     add_tensor(a);
     add_tensor(b);
@@ -516,6 +540,58 @@ void graph_model_cuda::forward(){
                             break;
                         }   
 
+                        // batch gemm
+                        case Ops::BATCH_MATRIX_MATRIX_MUL: {        // Batch GEMM
+                            Tensor* src0 = now_tensor->getsrc(0);   // A[M, K]
+                            Tensor* src1 = now_tensor->getsrc(1);   // B[K, N]
+                            bool can_implement = true;
+                            // A,B,C同为3维或4维
+                            // 3维：A[Batch, M, K], B[Batch, K, N], C[Batch, M, N]
+                            // 4维：A[Batch0, Batch1, M, K], B[Batch0, Batch1, K, N], C[Batch0, Batch1, M, N]
+                            // 检查A,B,C同为3维或4维
+                            if(!(src0->getrank()==src1->getrank() && src0->getrank()==now_tensor->getrank() && src0->getrank()>2)){
+                                can_implement = false;
+                            }
+                            int Batchsize, M, N, K; 
+                            // 检查rank是否符合
+                            if(can_implement){
+                                if(now_tensor->getrank() == 3){
+                                    // A[Batch, M, K], B[Batch, K, N], C[Batch, M, N]
+                                    // 检查BatchSize相等
+                                    if(!(now_tensor->shape(0) == src0->shape(0) && src0->shape(0) == src1->shape(0))){
+                                        can_implement = false;
+                                    }
+                                    // 检查K相等
+                                    if(src0->shape(2) != src1->shape(1)){
+                                        can_implement = false;
+                                    }
+                                    // 检查A和C的M对应，B和C的N对应
+                                    if(!(src0->shape(1) == now_tensor->shape(1) && src1->shape(2) == now_tensor->shape(2))){
+                                        can_implement = false;
+                                    }
+                                    Batchsize = now_tensor->shape(0);
+                                    M = now_tensor->shape(1);
+                                    N = now_tensor->shape(2);
+                                    K = src0->shape(2);
+                                }
+                                else{   // rank = 4
+                                    // pass
+                                    throw std::runtime_error("4-dim Batch GEMM is not implemented now");
+                                }
+                            }
+                            if(!can_implement){
+                                throw std::runtime_error("Rank or Shape is not compatible, cannot implement batch gemm");
+                            }
+
+                            #if USE_CUBLAS
+                            launch_batched_sgemm_cublas_default(src0->data(), src1->data(), now_tensor->data(), \
+                                        Batchsize, M, N, K, now_tensor->getscale());
+                            #else
+                            throw std::runtime_error("Batch GEMM is implemented by cublas, please turn is on");
+                            #endif
+                            break;
+                        } 
+
                         // =======================================
                         case Ops::MATRIX_VECTOR_MUL: { // matrix-vector mul, 高维可以转换为2维
                             Tensor* src0 = now_tensor->getsrc(0);   // A[M, K]
@@ -549,9 +625,9 @@ void graph_model_cuda::forward(){
                             break;
                         }
 
-                        case Ops::MATRIX_SOFTMAX: {
-                            // 调用cuda的launch_softmax_128
-                            Tensor* src0 = now_tensor->getsrc(0);       //
+                        case Ops::MATRIX_SOFTMAX: {                             
+                            Tensor* src0 = now_tensor->getsrc(0);
+                            // softmax支持高维，比如[B,r,dim]转换为2维[B*r, dim], 在dim维度进行sofmax
                             bool can_implement = true;
                             if(src0->getrank() != now_tensor->getrank()){       // 输入、输出rank相同
                                 can_implement = false;
@@ -600,6 +676,73 @@ void graph_model_cuda::forward(){
                             launch_transpose(src0->data(), now_tensor->data(), \
                                     h_shape, h_perm, extra_buff, 2);
                             break;
+                        }
+
+                        case Ops::MATRIX_PERMUTATION_102: {   // 3维矩阵perm, [0,1,2]->[1,0,2]
+                            Tensor* src0 = now_tensor->getsrc(0);
+                            bool can_implement = true;
+                            // 输入、输出size必须相同
+                            if(now_tensor->size() != src0->size()){
+                                can_implement = false;
+                            }
+                            // 输入、输出rank相同，且都是3维    
+                            if(src0->getrank() != now_tensor->getrank() || src0->getrank() != 3){       
+                                can_implement = false;
+                            }
+                            // 检查shape A[m,n,k] -> B[n,m,k]
+                            if(src0->shape(0) != now_tensor->shape(1) || src0->shape(1) != now_tensor->shape(0) || now_tensor->shape(2) != src0->shape(2))
+                                can_implement = false;
+                            if(!can_implement){
+                                throw std::runtime_error("Size is not the same, cannot implement matrix permutation102");
+                            }
+                            // 利用extra_buff分配d_shape和d_perm
+                            int h_shape[4] = {src0->shape(0), src0->shape(1), src0->shape(2), 0};
+                            int h_perm[4] = {1, 0, 2, -1};
+
+                            // 调用launch_transpose
+                            launch_transpose(src0->data(), now_tensor->data(), \
+                                    h_shape, h_perm, extra_buff, 3);
+                            break;
+                        }
+
+                        case Ops::MATRIX_PERMUTATION_120: {   // 3维矩阵perm, [0,1,2]->[1,2,0]
+                            Tensor* src0 = now_tensor->getsrc(0);
+                            bool can_implement = true;
+                            // 输入、输出size必须相同
+                            if(now_tensor->size() != src0->size()){
+                                can_implement = false;
+                            }
+                            // 输入、输出rank相同，且都是3维    
+                            if(src0->getrank() != now_tensor->getrank() || src0->getrank() != 3){       
+                                can_implement = false;
+                            }
+                            // 检查shape A[m,n,k] -> B[n,k,m]
+                            if(src0->shape(0) != now_tensor->shape(2) || src0->shape(1) != now_tensor->shape(0) || src0->shape(2) != now_tensor->shape(1))
+                                can_implement = false;
+                            if(!can_implement){
+                                throw std::runtime_error("Size is not the same, cannot implement matrix permutation120");
+                            }
+                            // 利用extra_buff分配d_shape和d_perm
+                            int h_shape[4] = {src0->shape(0), src0->shape(1), src0->shape(2), 0};
+                            int h_perm[4] = {1, 2, 0, -1};
+
+                            // 调用launch_transpose
+                            launch_transpose(src0->data(), now_tensor->data(), \
+                                    h_shape, h_perm, extra_buff, 3);
+                            break;
+                        }
+
+                        case Ops::MATRIX_RESHAPE: {
+                            Tensor* src0 = now_tensor->getsrc(0);
+                            bool can_implement = true;
+                            // 输入、输出size必须相同
+                            if(now_tensor->size() != src0->size()){
+                                can_implement = false;
+                            }
+                            if(!can_implement){
+                                throw std::runtime_error("Size is not the same, cannot implement reshape");
+                            }
+                            now_tensor->setdata(src0->data());              // 直接设置data即可
                         }
                         
                         case Ops::NONE:

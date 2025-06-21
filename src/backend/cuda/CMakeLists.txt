@@ -11,6 +11,7 @@ add_library(backend_cuda SHARED
     elementwise_oneflow.cu
     sgemm.cu
     sgemm_cublas.cu
+    batched_sgemm_cublas.cu
     cuda_memory.cu
     sgemv.cu
     transpose.cu

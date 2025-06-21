@@ -53,6 +53,8 @@ public:
     void add_op_matrix_rmsnorm(Tensor* a, Tensor* b, Tensor* gamma);
     // c = ab
     void add_op_matrix_matrix_mul(Tensor* a, Tensor* b, Tensor* c);
+    // c[i] = a[i]b[i], batched sgemm, i=0,1,...,batchsize-1
+    void add_op_batch_matrix_matrix_mul(Tensor* a, Tensor* b, Tensor* c);
     // c = ab
     void add_op_matrix_vector_mul(Tensor* a, Tensor* b, Tensor* c);
     // b = softmax(a)    -  row
@@ -63,7 +65,11 @@ public:
     void add_op_matrix_permutation_102(Tensor* a, Tensor* b);
     void add_op_matrix_permutation_210(Tensor* a, Tensor* b);
     void add_op_matrix_permutation_021(Tensor* a, Tensor* b);
+    void add_op_matrix_permutation_120(Tensor* a, Tensor* b);
     void add_op_matrix_permutation_0213(Tensor* a, Tensor* b);
+
+    // reshape
+    void add_op_matrix_reshape(Tensor* a, Tensor* b);
 
     // reset nodes, 全部设为 未遍历
     void reset_nodes();
