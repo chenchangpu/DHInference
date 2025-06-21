@@ -10,8 +10,10 @@ option(BUILD_OPENMP "Build with CUDA support" OFF)
 option(BUILD_CUDA "Build with CUDA support" ON)
 option(BUILD_TESTS "Build tests" ON)
 
+# CUDA算子选项
 option(USE_CUBLAS "Use cublas to implement GEMM" ON)
 option(USE_ONEFLOW "Use oneflow CUDA ops" ON)
+option(USE_CUTENSOR "Use cuTensor to implement permutation" ON)
 
 # 增加宏定义
 if(BUILD_OPENMP)
@@ -29,12 +31,17 @@ else()
     message(STATUS "CUDA Support Disabled")
 endif()
 
+# -D CUDA算子选项
 if(USE_CUBLAS)
     add_definitions(-DUSE_CUBLAS=1)
 endif()
 
 if(USE_ONEFLOW)
     add_definitions(-DUSE_ONEFLOW=1)
+endif()
+
+if(USE_CUTENSOR)
+    add_definitions(-DUSE_CUTENSOR=1)
 endif()
 
 # 定义头文件包含路径

@@ -15,6 +15,7 @@ add_library(backend_cuda SHARED
     cuda_memory.cu
     sgemv.cu
     transpose.cu
+    transpose_cutensor.cu
     softmax.cu
     softmax_oneflow.cu
     rmsnorm.cu
@@ -36,12 +37,19 @@ target_include_directories(backend_cuda
     ${CMAKE_CURRENT_SOURCE_DIR}/../../include
 )
 
+# cuTensor的lib（libcutensor.so）位置
+target_link_directories(backend_cuda 
+    PUBLIC 
+    /usr/lib/x86_64-linux-gnu/libcutensor/12
+)
+
 # 链接CUDA库
 target_link_libraries(backend_cuda
     PUBLIC
     CUDA::cudart
     CUDA::cuda_driver
     CUDA::cublas
+    cutensor        # cutensor
 )
 
 # 设置编译选项

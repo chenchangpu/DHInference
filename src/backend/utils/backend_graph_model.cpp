@@ -700,8 +700,13 @@ void graph_model_cuda::forward(){
                             int h_perm[4] = {1, 0, 2, -1};
 
                             // 调用launch_transpose
+                            #if USE_CUTENSOR
+                            launch_transpose_cutensor(src0->data(), now_tensor->data(), \
+                                    h_shape, h_perm, 3);
+                            #else
                             launch_transpose(src0->data(), now_tensor->data(), \
                                     h_shape, h_perm, extra_buff, 3);
+                            #endif
                             break;
                         }
 
@@ -727,8 +732,13 @@ void graph_model_cuda::forward(){
                             int h_perm[4] = {1, 2, 0, -1};
 
                             // 调用launch_transpose
+                            #if USE_CUTENSOR
+                            launch_transpose_cutensor(src0->data(), now_tensor->data(), \
+                                    h_shape, h_perm, 3);
+                            #else
                             launch_transpose(src0->data(), now_tensor->data(), \
                                     h_shape, h_perm, extra_buff, 3);
+                            #endif
                             break;
                         }
 

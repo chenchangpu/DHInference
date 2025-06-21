@@ -84,6 +84,7 @@ CUDA_API void launch_softmax_oneflow(float* d_x, float* d_y, int rows, int cols)
 
 // transpose.cu
 CUDA_API void launch_transpose(const float* input, float* output, const int shape[4], const int perm[4], void* extra_buff, int rank);
+CUDA_API void launch_transpose_cutensor(const float* input, float* output, const int shape[4], const int perm[4], int rank);
 
 #ifdef __cplusplus
 }
