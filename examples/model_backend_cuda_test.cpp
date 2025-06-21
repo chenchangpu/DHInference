@@ -159,11 +159,11 @@ int main() {
     std::string model_path = "dummy_model.bin";
     int n_layers = 2;
     int n_heads = 4;
-    int hidden_dim = 4096;
+    int hidden_dim = 1024;
     int ffn_expansion = 4;
     
-    const int seq_len = 8192;
-    const int input_dim = 4096;
+    const int seq_len = 1024;
+    const int input_dim = 1024;
     
     createDummyModelFile(model_path, n_layers, n_heads, hidden_dim, ffn_expansion);
     

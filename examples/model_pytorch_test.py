@@ -161,9 +161,9 @@ def main():
     # 模型配置
     n_layers = 2
     n_heads = 4
-    hidden_dim = 4096
+    hidden_dim = 1024
     ffn_expansion = 4
-    seq_len = 8192
+    seq_len = 1024
     
     # 创建模型文件
     model_path = "../build/dummy_model.bin"
