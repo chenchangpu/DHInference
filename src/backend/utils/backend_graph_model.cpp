@@ -781,7 +781,8 @@ void graph_model_cuda::move_data_to_gpu(Tensor* t) {
     size_t size = t->size() * sizeof(float);
     float* d_ptr = (float*)gpu_malloc(size);    // 分配显存
     float* h_ptr = t->data();                   // 获取CPU数据指针
-    copy_cpu_to_gpu(d_ptr, h_ptr, size);        // CPU复制到GPU
+    if(h_ptr)                                   // h_ptr若为null, 直接分配显存空间，而不copy
+        copy_cpu_to_gpu(d_ptr, h_ptr, size);        // CPU复制到GPU
     
     t->setdata(d_ptr);                          // 更改tensor指向GPU显存
     t->set_backend_type(BackendType::CUDA);     // 设置后端类型为CUDA
@@ -817,7 +818,6 @@ void graph_model_cuda::to_device() {
     for(int i = 0; i < n_leafs; ++i) {
         if(leaf_pools[i]->get_backend_type() == BackendType::CPU) {
             // input tensor不释放CPU内存，其他leaf节点释放
-            // move_data_to_gpu(leaf_pools[i], leaf_pools[i] != input);     // dahu: ?? 报错多次释放内存
             move_data_to_gpu(leaf_pools[i]);
         }
     }
@@ -825,7 +825,6 @@ void graph_model_cuda::to_device() {
     // 为所有node节点分配GPU内存并移动数据
     for(int i = 0; i < n_nodes; ++i) {
         if(node_pools[i]->get_backend_type() == BackendType::CPU) {
-            // move_data_to_gpu(node_pools[i], true);  // 中间node节点释放CPU内存
             move_data_to_gpu(node_pools[i]); 
         }
     }

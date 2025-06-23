@@ -177,105 +177,53 @@ Tensor* ModelLoader::loadAttentionParams(graph_model* model, Tensor* input, int 
         shape[0] = input->shape(0);
         shape[1] = hidden_dim;
         size_t size = shape[0] * shape[1] * sizeof(float);
-        float* Q_ptr = (float*)malloc(size);
-        if (!Q_ptr) {
-            throw std::runtime_error("Failed to allocate memory for Q");
-        }
+        float* Q_ptr = nullptr;                                 // 中间tensor的host可以先设置为null，后面直接分配显存空间
         Tensor* Q_t = new Tensor(2, shape, Q_ptr);  
         Q_t->setisleaf(false);
         
-        float* K_ptr = (float*)malloc(size);
-        if (!K_ptr) {
-            free(Q_ptr);
-            throw std::runtime_error("Failed to allocate memory for K");
-        }
+        float* K_ptr = nullptr;
         Tensor* K_t = new Tensor(2, shape, K_ptr);  
         K_t->setisleaf(false);
         
-        float* V_ptr = (float*)malloc(size);
-        if (!V_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            throw std::runtime_error("Failed to allocate memory for V");
-        }
+        float* V_ptr = nullptr;
         Tensor* V_t = new Tensor(2, shape, V_ptr);  
         V_t->setisleaf(false);
 
         int shape_3d[3] = { input->shape(0), model_config_.n_heads, head_dim};      // [seq_len, n_head, head_dim]
-        Tensor* Q_reshape_t = new Tensor(3, shape_3d);      // 解释shape为3维
+        Tensor* Q_reshape_t = new Tensor(3, shape_3d, Q_ptr);      // 解释shape为3维
         Q_reshape_t->setisleaf(false);
         Q_reshape_t->set_owns_data(false);                  // reshape其他的tensor, 并不自己拥有数据
-        Tensor* K_reshape_t = new Tensor(3, shape_3d);      // 解释shape为3维
+        Tensor* K_reshape_t = new Tensor(3, shape_3d, K_ptr);      // 解释shape为3维
         K_reshape_t->setisleaf(false);
         K_reshape_t->set_owns_data(false);                  // reshape其他的tensor, 并不自己拥有数据
-        Tensor* V_reshape_t = new Tensor(3, shape_3d);      // 解释shape为3维
+        Tensor* V_reshape_t = new Tensor(3, shape_3d, V_ptr);      // 解释shape为3维
         V_reshape_t->setisleaf(false);
         V_reshape_t->set_owns_data(false);                  // reshape其他的tensor, 并不自己拥有数据
 
         shape_3d[0] = model_config_.n_heads;
         shape_3d[1] = input->shape(0);
         shape_3d[2] = head_dim;
-        float* Q_perm_ptr = (float*)malloc(size);
-        if (!Q_perm_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            throw std::runtime_error("Failed to allocate memory for Q_perm_ptr");
-        }
+        float* Q_perm_ptr = nullptr;
         Tensor* Q_perm_t = new Tensor(3, shape_3d, Q_perm_ptr);
 
-        float* V_perm_ptr = (float*)malloc(size);
-        if (!V_perm_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            throw std::runtime_error("Failed to allocate memory for V_perm_ptr");
-        }
+        float* V_perm_ptr = nullptr;
         Tensor* V_perm_t = new Tensor(3, shape_3d, V_perm_ptr);
 
         shape_3d[0] = model_config_.n_heads;
         shape_3d[1] = head_dim; 
         shape_3d[2] = input->shape(0);
-        float* K_perm_ptr = (float*)malloc(size);
-        if (!K_perm_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            throw std::runtime_error("Failed to allocate memory for K_perm_ptr");
-        }
+        float* K_perm_ptr = nullptr;
         Tensor* K_perm_t = new Tensor(3, shape_3d, K_perm_ptr);
 
         shape_3d[0] = model_config_.n_heads;
         shape_3d[1] = shape_3d[2] = input->shape(0); // seq_len
         size = shape_3d[0] * shape_3d[1] * shape_3d[2] * sizeof(float);
-        float* QK_ptr = (float*)malloc(size);
-        if (!QK_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            free(K_perm_ptr);
-            throw std::runtime_error("Failed to allocate memory for QK");
-        }
+        float* QK_ptr = nullptr;
         Tensor* QK_t = new Tensor(3, shape_3d, QK_ptr);    
         QK_t->setisleaf(false);
         QK_t->setscale(scale);          // QK有scale，需要设置
 
-        float* P_ptr = (float*)malloc(size);
-        if (!P_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            free(K_perm_ptr);
-            free(QK_ptr);
-            throw std::runtime_error("Failed to allocate memory for P");
-        }
+        float* P_ptr = nullptr;
         Tensor* P_t = new Tensor(3, shape_3d, P_ptr);      
         P_t->setisleaf(false);
 
@@ -283,18 +231,7 @@ Tensor* ModelLoader::loadAttentionParams(graph_model* model, Tensor* input, int 
         shape_3d[1] = input->shape(0); // seq_len
         shape_3d[2] = head_dim;
         size = shape_3d[0] * shape_3d[1] * shape_3d[2] * sizeof(float);
-        float* PV_ptr = (float*)malloc(size);
-        if (!PV_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            free(K_perm_ptr);
-            free(QK_ptr);
-            free(P_ptr);
-            throw std::runtime_error("Failed to allocate memory for PV");
-        }
+        float* PV_ptr = nullptr;
         Tensor* PV_t = new Tensor(3, shape_3d, PV_ptr);    
         PV_t->setisleaf(false);
 
@@ -302,19 +239,7 @@ Tensor* ModelLoader::loadAttentionParams(graph_model* model, Tensor* input, int 
         shape_3d[1] = model_config_.n_heads;
         shape_3d[2] = head_dim;
         size = shape_3d[0] * shape_3d[1] * shape_3d[2] * sizeof(float);
-        float* PV_perm_ptr = (float*)malloc(size);
-        if (!PV_perm_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            free(K_perm_ptr);
-            free(QK_ptr);
-            free(P_ptr);
-            free(PV_ptr);
-            throw std::runtime_error("Failed to allocate memory for PV_perm_ptr");
-        }
+        float* PV_perm_ptr = nullptr;
         Tensor* PV_perm_t = new Tensor(3, shape_3d, PV_perm_ptr);    
         PV_perm_t->setisleaf(false);
 
@@ -324,20 +249,7 @@ Tensor* ModelLoader::loadAttentionParams(graph_model* model, Tensor* input, int 
         PV_perm_reshape_t->setisleaf(false);
         PV_perm_reshape_t->set_owns_data(false);                  // reshape其他的tensor, 并不自己拥有数据
 
-        float* O_ptr = (float*)malloc(size);
-        if (!O_ptr) {
-            free(Q_ptr);
-            free(K_ptr);
-            free(V_ptr);
-            free(Q_perm_ptr);
-            free(V_perm_ptr);
-            free(K_perm_ptr);
-            free(QK_ptr);
-            free(P_ptr);
-            free(PV_ptr);
-            free(PV_perm_ptr);
-            throw std::runtime_error("Failed to allocate memory for O");
-        }
+        float* O_ptr = nullptr;
         Tensor* O_t = new Tensor(2, shape, O_ptr);      
         O_t->setisleaf(false);
 
@@ -416,10 +328,7 @@ Tensor* ModelLoader::loadLayerNormParams(graph_model* model, Tensor* input,
             out_shape[rk] = input->shape(rk);
             out_size *= out_shape[rk];
         }
-        float* output_ptr = (float*)malloc(out_size);
-        if (!output_ptr) {
-            throw std::runtime_error("Failed to allocate memory for output");
-        }
+        float* output_ptr = nullptr;
         Tensor* output = new Tensor(out_rank, out_shape, output_ptr);
         // 进行计算
         model->add_op_matrix_layernorm(input, output, gamma_t, beta_t);
@@ -472,28 +381,16 @@ Tensor* ModelLoader::loadFFNParams(graph_model* model, Tensor* input,
         shape[0] = input->shape(0);
         shape[1] = expanded_dim;
         size_t size = shape[0] * shape[1] * sizeof(float);
-        float* o1_ptr = (float*)malloc(size);
-        if (!o1_ptr) {
-            throw std::runtime_error("Failed to allocate memory for o1");
-        }
+        float* o1_ptr = nullptr;
         Tensor* o1_t = new Tensor(2, shape, o1_ptr);        // o1
 
-        float* o2_ptr = (float*)malloc(size);
-        if (!o2_ptr) {
-            free(o1_ptr);
-            throw std::runtime_error("Failed to allocate memory for o2");
-        }
+        float* o2_ptr = nullptr;
         Tensor* o2_t = new Tensor(2, shape, o2_ptr);        // o2
 
         shape[0] = input->shape(0);
         shape[1] = hidden_dim;
         size = shape[0] * shape[1] * sizeof(float);
-        float* o_ptr = (float*)malloc(size);
-        if (!o_ptr) {
-            free(o1_ptr);
-            free(o2_ptr);
-            throw std::runtime_error("Failed to allocate memory for o");
-        }
+        float* o_ptr = nullptr;
         Tensor* o_t = new Tensor(2, shape, o_ptr);        // o
 
         // 进行计算

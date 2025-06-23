@@ -205,21 +205,21 @@ int main() {
         // std::cout << "推理时间: " << duration.count() << " us" << std::endl;
         
         // 获取结果并复制回CPU
-        dhinference::backend::Tensor* result_gpu = model->get_result_tensor();
-        float* result_cpu = (float*)malloc(result_gpu->size() * sizeof(float));
-        copy_gpu_to_cpu(result_cpu, result_gpu->data(), result_gpu->size() * sizeof(float));
+        dhinference::backend::Tensor* result_gpu_tensor = model->get_result_tensor();
+        float* result_cpu = (float*)malloc(result_gpu_tensor->size() * sizeof(float));
+        copy_gpu_to_cpu(result_cpu, result_gpu_tensor->data(), result_gpu_tensor->size() * sizeof(float));
         
         // 创建CPU tensor用于验证
-        dhinference::backend::Tensor* result_tensor = new dhinference::backend::Tensor(2, shape, result_cpu, dhinference::backend::BackendType::CPU);
+        dhinference::backend::Tensor* result_cpu_tensor = new dhinference::backend::Tensor(2, shape, result_cpu, dhinference::backend::BackendType::CPU);
 
         // 验证输出
-        if (!isValidOutput(result_tensor, seq_len, input_dim)) {
+        if (!isValidOutput(result_cpu_tensor, seq_len, input_dim)) {
             std::cerr << "推理测试失败" << std::endl;
             return 1;
         }
         
         // 统计结果
-        std::vector<float> output_vec(result_cpu, result_cpu + result_gpu->size());
+        std::vector<float> output_vec(result_cpu, result_cpu + result_gpu_tensor->size());
         std::cout << "推理测试成功！" << std::endl;
         std::cout << "输入维度: [" << seq_len << " x " << input_dim << "]" << std::endl;
         std::cout << "输出维度: [" << seq_len << " x " << input_dim << "]" << std::endl;
