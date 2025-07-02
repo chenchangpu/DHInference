@@ -272,7 +272,7 @@ Tensor* ModelLoader::loadAttentionParams(graph_model* model, Tensor* input, int 
         model->add_op_matrix_softmax(QK_t, P_t);             // softmax
 
         model->add_op_batch_matrix_matrix_mul(P_t, V_perm_t, PV_t);     // batch gemm: P x V
-        model->add_op_matrix_permutation_102(PV_t, PV_perm_t);     // batch gemm: P x V
+        model->add_op_matrix_permutation_102(PV_t, PV_perm_t);     // [n_head, seq_len, h_dim] -> [seq_len, n_head, h_dim]
         model->add_op_matrix_reshape(PV_perm_t, PV_perm_reshape_t); // reshape
         model->add_op_matrix_matrix_mul(PV_perm_reshape_t, Wo_t, O_t);    // PV
 

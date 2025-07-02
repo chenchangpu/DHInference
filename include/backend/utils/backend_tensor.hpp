@@ -36,6 +36,11 @@ enum class BackendType{
     CUDA
 };
 
+enum class InferenceMode{
+    FULL_PRECISION,         // 权重和激活全部为单精度fp32，已实现
+    MIXED_PRECISION         // 矩阵乘法为fp16（中间累加结果为fp32）,激活函数relu也为fp16，其他（layernorm, softmax, add等）仍然为单精度
+};
+
 // backend的tensor类
 class Tensor {
 public:
