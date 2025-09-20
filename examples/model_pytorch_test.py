@@ -209,23 +209,23 @@ def main():
     output = output.numpy()
     
     # 打印统计信息
-    print(f"\n推理时间: {duration:.2f} ms")
-    print(f"输入维度: [{seq_len} x {hidden_dim}]")
-    print(f"输出维度: [{seq_len} x {hidden_dim}]")
+    # print(f"\n推理时间: {duration:.2f} ms")
+    # print(f"输入维度: [{seq_len} x {hidden_dim}]")
+    # print(f"输出维度: [{seq_len} x {hidden_dim}]")
     
-    print("\n输出统计信息：")
-    print(f"  最大值: {output.max():.6f}")
-    print(f"  最小值: {output.min():.6f}")
-    print(f"  平均值: {output.mean():.6f}")
+    # print("\n输出统计信息：")
+    # print(f"  最大值: {output.max():.6f}")
+    # print(f"  最小值: {output.min():.6f}")
+    # print(f"  平均值: {output.mean():.6f}")
     
-    # 打印每个序列位置的统计信息
-    print("\n每个序列位置的统计信息：")
-    for i in range(0, seq_len, seq_len//10):
-        pos_data = output[i]
-        print(f"  位置 {i}:")
-        print(f"    最大值: {pos_data.max():.6f}")
-        print(f"    最小值: {pos_data.min():.6f}")
-        print(f"    平均值: {pos_data.mean():.6f}")
+    # # 打印每个序列位置的统计信息
+    # print("\n每个序列位置的统计信息：")
+    # for i in range(0, seq_len, seq_len//10):
+    #     pos_data = output[i]
+    #     print(f"  位置 {i}:")
+    #     print(f"    最大值: {pos_data.max():.6f}")
+    #     print(f"    最小值: {pos_data.min():.6f}")
+    #     print(f"    平均值: {pos_data.mean():.6f}")
 
 if __name__ == "__main__":
     main() 
