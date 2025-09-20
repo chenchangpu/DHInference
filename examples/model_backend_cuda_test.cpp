@@ -224,39 +224,39 @@ int main() {
         std::cout << "输入维度: [" << seq_len << " x " << input_dim << "]" << std::endl;
         std::cout << "输出维度: [" << seq_len << " x " << input_dim << "]" << std::endl;
         
-        // 打印统计信息
-        float max_val = *std::max_element(output_vec.begin(), output_vec.end());
-        float min_val = *std::min_element(output_vec.begin(), output_vec.end());
-        float mean = 0.0f;
-        for (float val : output_vec) {
-            mean += val;
-        }
-        mean /= output_vec.size();
+        // // 打印统计信息
+        // float max_val = *std::max_element(output_vec.begin(), output_vec.end());
+        // float min_val = *std::min_element(output_vec.begin(), output_vec.end());
+        // float mean = 0.0f;
+        // for (float val : output_vec) {
+        //     mean += val;
+        // }
+        // mean /= output_vec.size();
         
-        std::cout << "输出统计信息：" << std::endl;
-        std::cout << "  最大值: " << max_val << std::endl;
-        std::cout << "  最小值: " << min_val << std::endl;
-        std::cout << "  平均值: " << mean << std::endl;
+        // std::cout << "输出统计信息：" << std::endl;
+        // std::cout << "  最大值: " << max_val << std::endl;
+        // std::cout << "  最小值: " << min_val << std::endl;
+        // std::cout << "  平均值: " << mean << std::endl;
         
-        // 打印序列位置统计信息
-        std::cout << "\n每个序列位置的统计信息：" << std::endl;
-        for (int i = 0; i < seq_len; i += seq_len/10) {
-            float pos_max = output_vec[i * input_dim];
-            float pos_min = output_vec[i * input_dim];
-            float pos_sum = 0.0f;
+        // // 打印序列位置统计信息
+        // std::cout << "\n每个序列位置的统计信息：" << std::endl;
+        // for (int i = 0; i < seq_len; i += seq_len/10) {
+        //     float pos_max = output_vec[i * input_dim];
+        //     float pos_min = output_vec[i * input_dim];
+        //     float pos_sum = 0.0f;
             
-            for (int j = 0; j < input_dim; ++j) {
-                float val = output_vec[i * input_dim + j];
-                pos_max = std::max(pos_max, val);
-                pos_min = std::min(pos_min, val);
-                pos_sum += val;
-            }
+        //     for (int j = 0; j < input_dim; ++j) {
+        //         float val = output_vec[i * input_dim + j];
+        //         pos_max = std::max(pos_max, val);
+        //         pos_min = std::min(pos_min, val);
+        //         pos_sum += val;
+        //     }
             
-            std::cout << "  位置 " << i << ":" << std::endl;
-            std::cout << "    最大值: " << pos_max << std::endl;
-            std::cout << "    最小值: " << pos_min << std::endl;
-            std::cout << "    平均值: " << (pos_sum / input_dim) << std::endl;
-        }
+        //     std::cout << "  位置 " << i << ":" << std::endl;
+        //     std::cout << "    最大值: " << pos_max << std::endl;
+        //     std::cout << "    最小值: " << pos_min << std::endl;
+        //     std::cout << "    平均值: " << (pos_sum / input_dim) << std::endl;
+        // }
 
         // 释放资源
         delete model;         // 这会释放所有tensor和extra_buff
